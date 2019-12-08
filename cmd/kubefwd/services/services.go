@@ -354,6 +354,7 @@ func (opts *FwdServiceOpts) ForwardService(svcName string, svcNamespace string) 
 	// headless service not only forward first Pod as service name, but also portforward all pods.
 	if svc.Spec.ClusterIP == "None" {
 		opts.ForwardFirstPodInService(pods, svc)
+		opts.ForwardFirstPodInServiceWithTargetPort(pods, svc)
 		opts.ForwardAllPodInService(pods, svc)
 	} else {
 		opts.ForwardFirstPodInService(pods, svc)
@@ -379,7 +380,7 @@ func (opts *FwdServiceOpts) UnForwardService(svcName string, svcNamespace string
 	return
 }
 
-func (opts *FwdServiceOpts) LoopPodToForward(pods []v1.Pod, podName bool, svc *v1.Service) {
+func (opts *FwdServiceOpts) LoopPodToForward(pods []v1.Pod, podName bool, svc *v1.Service, portToTarget bool) {
 	publisher := &fwdpub.Publisher{
 		PublisherName: "Services",
 		Output:        false,
@@ -399,6 +400,10 @@ func (opts *FwdServiceOpts) LoopPodToForward(pods []v1.Pod, podName bool, svc *v
 
 			podPort = port.TargetPort.String()
 			localPort := strconv.Itoa(int(port.Port))
+
+			if portToTarget {
+				localPort = podPort
+			}
 
 			if _, err := strconv.Atoi(podPort); err != nil {
 				// search a pods containers for the named port
@@ -438,7 +443,7 @@ func (opts *FwdServiceOpts) LoopPodToForward(pods []v1.Pod, podName bool, svc *v
 
 			log.Printf("Forwarding: %s:%d to pod %s:%s\n",
 				serviceHostName,
-				port.Port,
+				localPort,
 				pod.Name,
 				podPort,
 			)
@@ -482,11 +487,15 @@ func (opts *FwdServiceOpts) LoopPodToForward(pods []v1.Pod, podName bool, svc *v
 }
 
 func (opts *FwdServiceOpts) ForwardFirstPodInService(pods *v1.PodList, svc *v1.Service) {
-	opts.LoopPodToForward([]v1.Pod{pods.Items[0]}, false, svc)
+	opts.LoopPodToForward([]v1.Pod{pods.Items[0]}, false, svc, false)
+}
+
+func (opts *FwdServiceOpts) ForwardFirstPodInServiceWithTargetPort(pods *v1.PodList, svc *v1.Service) {
+	opts.LoopPodToForward([]v1.Pod{pods.Items[0]}, false, svc, true)
 }
 
 func (opts *FwdServiceOpts) ForwardAllPodInService(pods *v1.PodList, svc *v1.Service) {
-	opts.LoopPodToForward(pods.Items, true, svc)
+	opts.LoopPodToForward(pods.Items, true, svc, false)
 }
 
 func portSearch(portName string, containers []v1.Container) (string, bool) {
