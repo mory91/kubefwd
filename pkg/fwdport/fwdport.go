@@ -288,8 +288,8 @@ func (pfo *PortForwardOpts) WaitForPodRunning(signalsChan chan struct{}) (*v1.Po
 			break
 		}
 		if event.Object != nil {
-			changedPod := event.Object.(*v1.Pod)
-			if changedPod.Status.Phase == v1.PodRunning {
+			changedPod, ok := event.Object.(*v1.Pod)
+			if ok && changedPod.Status.Phase == v1.PodRunning {
 				return changedPod, nil
 			}
 		}

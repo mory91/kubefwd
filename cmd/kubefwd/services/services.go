@@ -441,7 +441,7 @@ func (opts *FwdServiceOpts) LoopPodToForward(pods []v1.Pod, podName bool, svc *v
 				localIp.String(),
 			)
 
-			log.Printf("Forwarding: %s:%d to pod %s:%s\n",
+			log.Printf("Forwarding: %s:%s to pod %s:%s\n",
 				serviceHostName,
 				localPort,
 				pod.Name,
